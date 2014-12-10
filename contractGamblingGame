@@ -1,0 +1,80 @@
+contract GamblingGame{
+	//Create a gambling game that takes a maximum of nubBets bets
+	function GamblingGame(uint8 _maxNumBets){
+    	maxNumBets = _maxNumBets;
+	}
+    
+	function bet(uint8 numberBet){
+    	address sender = msg.sender;
+    	// if there's a bet on the number then return
+    	if(isNumberBet[numberBet]) return;
+   	 
+    	//increase the pot of the game
+    	pot+=msg.value;
+   	 
+    	//Map the bet and increase the number of bets
+    	numbersMap[numBets]=numberBet;
+    	userBet[numberBet]=sender;
+    	numBets++;
+   	 
+    	//check if the number of bets has reached the limit
+    	if(numBets==maxNumBets){
+        	solveBets;
+    	}
+   	 
+   	 
+	}
+    
+	function solveBets(){
+   	 
+    	//create a random number dependig on on the previous block hash
+    	hash256 random=sha3(block.prevhash);
+    	hash256 betHash;
+    	uint8 winnerBet;
+   	 
+    	//variable to scroll throught the map
+    	uint8 counter = 0;
+   	 
+    	bool winnerFound = false;
+   	 
+    	//Check if there's a winner
+    	while(counter<maxNumBets && !winnerFound) {
+       	 
+        	uint8 bet = numbersMap[counter];
+       	 
+        	if (sha3(bet)==random){
+            	winnerFound = true;
+            	winnerBet= bet;
+        	}
+    	}
+   	 
+    	//if there was a winner, stores his address in the "winnner" variable
+    	if(winnerFound){
+        	winner = userBet[winnerBet];
+    	}
+	}
+
+	//check if the sender has won the game and returns the pot
+	function checkWinner() returns (uint amount){
+    	if(msg.sender==winner){
+        	amount = pot;
+    	}
+    	else{
+        	amount = 0;
+    	}
+	}
+    
+	//
+    
+	uint8 maxNumBets;
+	uint8 numBets;
+	uint pot;
+	address winner;
+	mapping(uint8 => address) userBet;
+	mapping(uint8 => bool) isNumberBet;
+	mapping(uint8 => uint8) numbersMap;
+    
+}
+
+
+
