@@ -2,6 +2,8 @@ contract GamblingGame{
 	//Create a gambling game that takes a maximum of nubBets bets
 	function GamblingGame(uint8 _maxNumBets){
     	maxNumBets = _maxNumBets;
+    	numBets = 0;
+    	pot = 0;
 	}
     
 	function bet(uint8 numberBet){
@@ -15,11 +17,12 @@ contract GamblingGame{
     	//Map the bet and increase the number of bets
     	numbersMap[numBets]=numberBet;
     	userBet[numberBet]=sender;
+    	isNumberBet[numberBet] = true;
     	numBets++;
    	 
     	//check if the number of bets has reached the limit
     	if(numBets==maxNumBets){
-        	solveBets;
+        	solveBets();
     	}
    	 
    	 
@@ -75,6 +78,5 @@ contract GamblingGame{
 	mapping(uint8 => uint8) numbersMap;
     
 }
-
 
 
