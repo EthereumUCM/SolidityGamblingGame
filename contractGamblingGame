@@ -1,80 +1,95 @@
 contract GamblingGame{
-	//Create a gambling game that takes a maximum of nubBets bets
-	function GamblingGame(uint8 _maxNumBets){
-    	maxNumBets = _maxNumBets;
-	}
-    
-	function bet(uint8 numberBet){
-    	address sender = msg.sender;
-    	// if there's a bet on the number then return
-    	if(isNumberBet[numberBet]) return;
-   	 
-    	//increase the pot of the game
-    	pot+=msg.value;
-   	 
-    	//Map the bet and increase the number of bets
-    	numbersMap[numBets]=numberBet;
-    	userBet[numberBet]=sender;
-    	numBets++;
-   	 
-    	//check if the number of bets has reached the limit
-    	if(numBets==maxNumBets){
-        	solveBets;
-    	}
-   	 
-   	 
-	}
-    
-	function solveBets(){
-   	 
-    	//create a random number dependig on on the previous block hash
-    	hash256 random=sha3(block.prevhash);
-    	hash256 betHash;
-    	uint8 winnerBet;
-   	 
-    	//variable to scroll throught the map
-    	uint8 counter = 0;
-   	 
-    	bool winnerFound = false;
-   	 
-    	//Check if there's a winner
-    	while(counter<maxNumBets && !winnerFound) {
-       	 
-        	uint8 bet = numbersMap[counter];
-       	 
-        	if (sha3(bet)==random){
-            	winnerFound = true;
-            	winnerBet= bet;
-        	}
-    	}
-   	 
-    	//if there was a winner, stores his address in the "winnner" variable
-    	if(winnerFound){
-        	winner = userBet[winnerBet];
-    	}
-	}
 
-	//check if the sender has won the game and returns the pot
-	function checkWinner() returns (uint amount){
-    	if(msg.sender==winner){
-        	amount = pot;
-    	}
-    	else{
-        	amount = 0;
-    	}
+	struct Game{
+		uint numNumbers;
+		address master;
+		uint numBets;
+		uint pot;
+		bool open;
+		
+		mapping(uint => address) betList; /// id -> gambler
+		mapping(uint => uint) numbersBet; /// id -> number
+		mapping(uint => uint) betAmount; /// id -> amount
+		mapping(uint => uint) numberAmount; /// number -> totalAmount
+
+		uint expirationDate;
+	}
+	
+	/// List of games
+	mapping(uint => Game) gameList;
+	uint numGames;
+
+
+	function GamblingGame(){
+		numGames = 0;
+	}
+	
+	function createGame(uint timeToBet){
+		numGames += 1;
+		
+		Game newGame = gameList[numGames];
+		newGame.numNumbers = 10;
+		newGame.master = msg.sender;
+		newGame.numBets = 0;
+		newGame.pot = 0;
+		newGame.expirationDate = block.timestamp + timeToBet;
+		newGame.open = true;
 	}
     
-	//
+	function bet(uint id, uint8 numberBet){
+		Game g = gameList[id];
+		
+		if(g.open){		
+			if(numberBet <= g.numNumbers && numberBet > 0){
+				g.numBets += 1;
+				g.pot += msg.value;
+				g.betList[g.numBets] = msg.sender;
+				g.numbersBet[g.numBets] = numberBet;
+				g.betAmount[g.numBets] = msg.value;
+				g.numberAmount[numberBet] += msg.value;
+			}
+			
+			checkExpirationDate(id);
+		}
+	}
+	
+	function checkExpirationDate(uint id){
+		Game g = gameList[id];
+		
+		if(block.timestamp > g.expirationDate){
+				g.open = false;
+				solveBets(id);
+		}
+	}
     
-	uint8 maxNumBets;
-	uint8 numBets;
-	uint pot;
-	address winner;
-	mapping(uint8 => address) userBet;
-	mapping(uint8 => bool) isNumberBet;
-	mapping(uint8 => uint8) numbersMap;
-    
+	function solveBets(uint id){
+		Game g = gameList[id];
+		
+		uint random = (block.timestamp % g.numNumbers) + 1;		
+    			
+		uint betAmount = g.numberAmount[id];
+		
+		uint i = 1;
+		address gambler;
+		if(betAmount == 0){
+			while(i <= g.numBets){
+				gambler = g.betList[i];
+				gambler.send(g.betAmount[i]);
+				
+				i += 1;
+			}
+		}else{
+			while(i <= g.numBets){
+				gambler = g.betList[i];
+				
+				if(random == g.numbersBet[i]){
+					uint userPrize = ((g.betAmount[i]*g.pot*1000)/betAmount)/1000;
+					
+					gambler.send(userPrize);
+				}
+				
+				i += 1;
+			}
+		}  
+	}		
 }
-
-
-
