@@ -36,7 +36,7 @@ contract GamblingGame{
 		newGame.open = true;
 	}
     
-	function bet(uint id, uint8 numberBet){
+	function bet(uint id, uint numberBet){
 		Game g = gameList[id];
 		
 		if(g.open){		
